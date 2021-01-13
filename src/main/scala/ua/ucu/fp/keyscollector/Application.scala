@@ -26,7 +26,7 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-  val findingSource: Source[Message[KeyFinding], NotUsed] =
+  val findingSource: Source[Message[MessagePayload], NotUsed] =
     GitHubSource("foursquare_key")
       .map(kf => Message(kf.service, kf))
       .via(GraphDSL.create() { implicit graphBuilder =>
