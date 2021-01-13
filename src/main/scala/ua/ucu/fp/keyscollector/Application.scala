@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload}
 import ua.ucu.fp.keyscollector.integration.GitHubSource
-import ua.ucu.fp.keyscollector.stage.NewProjectFlow
+import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -30,11 +30,12 @@ object Application extends App {
     GitHubSource("foursquare_key")
       .map(kf => Message(kf.service, kf))
       .via(GraphDSL.create() { implicit graphBuilder =>
-        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
+        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](3))
         val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
 
         IN ~> OUT
         IN ~> NewProjectFlow() ~> OUT
+        IN ~> StatisticsSink()
 
         FlowShape(IN.in, OUT.out)
       })

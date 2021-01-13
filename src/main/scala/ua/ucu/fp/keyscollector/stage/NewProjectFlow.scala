@@ -5,6 +5,7 @@ import akka.stream.alpakka.mongodb.DocumentReplace
 import akka.stream.alpakka.mongodb.scaladsl.MongoFlow
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Zip}
+import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.reactivestreams.client.{MongoClients, MongoCollection}
 import org.bson.{BsonDocument, Document}
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, NewProjectLeaked}
@@ -38,17 +39,20 @@ object NewProjectFlow {
 
   def filterOnlyNewFlow(): Flow[(Boolean, Message[KeyFinding]), Message[KeyFinding], _] = {
     Flow[(Boolean, Message[KeyFinding])]
+      .log("filterOnlyNewFlow")
       .filter(_._1)
       .map(_._2)
   }
 
   def mapKeyToNewProject(): Flow[Message[KeyFinding], Message[NewProjectLeaked], _] = {
     Flow[Message[KeyFinding]]
+      .log("mapKeyToNewProject")
       .map(key => Message(key.service, NewProjectLeaked(key.payload.service, key.payload.language, key.payload.projectUrl)))
   }
 
   def mapToReplaceFlow(): Flow[Message[KeyFinding], DocumentReplace[Document], _] = {
     Flow[Message[KeyFinding]]
+      .log("mapToReplaceFlow")
       .map(_.payload.projectUrl)
       .map(project => DocumentReplace( // TODO put upsert: true somewhere
         BsonDocument.parse("{\"_id\": \"" + project + "\"}"),
@@ -57,7 +61,8 @@ object NewProjectFlow {
   }
 
   def checkIsNewFlow(): Flow[DocumentReplace[Document], Boolean, _] = {
-      MongoFlow.replaceOne[Document](collection)
+      MongoFlow.replaceOne[Document](collection, new ReplaceOptions().upsert(true))
+        .log("checkIsNewFlow")
         .map(_._1)
         .map(_.getMatchedCount)
         .map(_ == 0)
