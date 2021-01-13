@@ -35,12 +35,17 @@ object GitHubSource {
         .map(x => x.entity)
         .flatMap(x => Unmarshal(x).to[String])
         .map(x => mapper.readValue[Map[String, Any]](x))
-        .map(x => x("items").asInstanceOf[List[Object]].map(RepositoryDecoder(_))(0))
+        .map(x => x("items").asInstanceOf[List[Object]].map(RepositoryDecoder(_)))
 
       responseFuture
     }
+    .mapConcat(x => x)
 
   def main(args: Array[String]): Unit = {
-    apply("foursquare_key")
+    //Source.tick(1.second, 10.second, "tick")
+    //  .mapAsync(1) {_ => Future(List(1, 2, 3))}
+    //  .mapConcat(x => x)
+    //  .runForeach(println)
+    //apply("foursquare_key")
   }
 }
