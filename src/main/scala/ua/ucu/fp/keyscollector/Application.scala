@@ -3,6 +3,7 @@ package ua.ucu.fp.keyscollector
 import akka.NotUsed
 import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.stream.FlowShape
@@ -12,8 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload}
 import ua.ucu.fp.keyscollector.integration.GitHubSource
-import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink}
+import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink, StatisticsSource}
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
 
@@ -47,6 +49,20 @@ object Application extends App {
       connection.handleWith(
         get {
           concat(
+            path("stats") {
+              parameters("tick", "unit") { (tick: String, unit: String) => {
+                handleWebSocketMessages(
+                  Flow.fromSinkAndSource(
+                    Sink.ignore,
+                    Source
+                      .tick(1.second, FiniteDuration(tick.toInt, unit), "tick")
+                      .zip(StatisticsSource())
+                      .map(m => m._2)
+                      .map(mapper.writeValueAsString(_))
+                      .map(TextMessage(_))
+                  ))
+              }}
+            },
             path("stream") {
               parameter("services".repeated) { services => {
                 println(s"Start websocket with services $services")
@@ -64,8 +80,7 @@ object Application extends App {
                   source
                 )
                 handleWebSocketMessages(flow)
-              }
-              }
+              }}
             }
           )
         }
