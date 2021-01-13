@@ -15,3 +15,4 @@ project/plugins/project/
 .lib/
 *.class
 *.log
+src/main/scala/ua/ucu/fp/keyscollector/Config.scala

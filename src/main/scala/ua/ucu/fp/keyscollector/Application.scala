@@ -11,6 +11,7 @@ import akka.stream.scaladsl.{Broadcast, BroadcastHub, Flow, GraphDSL, Keep, Merg
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload}
+import ua.ucu.fp.keyscollector.integration.GitHubSource
 import ua.ucu.fp.keyscollector.stage.NewProjectFlow
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -25,20 +26,22 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-  val findingSource: Source[Message[MessagePayload], NotUsed] =
-    // TODO change to real Source
-    Source.single(Message("Facebook", KeyFinding("Facebook", "scala", "https://github.com/koliambus/keys-collector", "https://github.com/koliambus/keys-collector/blob/43529519c6a6eed8f4e73bfaf975607da46045d6/src/main/scala/ua/ucu/fp/keyscollector/Application.scala#L11")))
-      .via(GraphDSL.create() { implicit graphBuilder =>
-        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
-        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
+//  val findingSource: Source[Message[MessagePayload], NotUsed] =
+//    Source.single(Message("Facebook", KeyFinding("Facebook", "scala", "https://github.com/koliambus/keys-collector", "https://github.com/koliambus/keys-collector/blob/43529519c6a6eed8f4e73bfaf975607da46045d6/src/main/scala/ua/ucu/fp/keyscollector/Application.scala#L11")))
+//      .via(GraphDSL.create() { implicit graphBuilder =>
+//        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
+//        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
+//
+//        IN ~> OUT
+//        IN ~> NewProjectFlow() ~> OUT
+//
+//        FlowShape(IN.in, OUT.out)
+//      })
+//      .toMat(BroadcastHub.sink)(Keep.right)
+//      .run
+  val findingSource: Source[KeyFinding, NotUsed] = GitHubSource("foursquare_key")
 
-        IN ~> OUT
-        IN ~> NewProjectFlow() ~> OUT
-
-        FlowShape(IN.in, OUT.out)
-      })
-      .toMat(BroadcastHub.sink)(Keep.right)
-      .run
+  //Source.single(KeyFinding("Facebook", "scala", "https://github.com/koliambus/keys-collector", "https://github.com/koliambus/keys-collector/blob/43529519c6a6eed8f4e73bfaf975607da46045d6/src/main/scala/ua/ucu/fp/keyscollector/Application.scala#L11"))
 
   val bindingFuture =
     serverSource.runForeach { connection => // foreach materializes the source
