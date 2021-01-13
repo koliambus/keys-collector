@@ -26,22 +26,20 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-//  val findingSource: Source[Message[MessagePayload], NotUsed] =
-//    Source.single(Message("Facebook", KeyFinding("Facebook", "scala", "https://github.com/koliambus/keys-collector", "https://github.com/koliambus/keys-collector/blob/43529519c6a6eed8f4e73bfaf975607da46045d6/src/main/scala/ua/ucu/fp/keyscollector/Application.scala#L11")))
-//      .via(GraphDSL.create() { implicit graphBuilder =>
-//        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
-//        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
-//
-//        IN ~> OUT
-//        IN ~> NewProjectFlow() ~> OUT
-//
-//        FlowShape(IN.in, OUT.out)
-//      })
-//      .toMat(BroadcastHub.sink)(Keep.right)
-//      .run
-  val findingSource: Source[KeyFinding, NotUsed] = GitHubSource("foursquare_key")
+  val findingSource: Source[Message[KeyFinding], NotUsed] =
+    GitHubSource("foursquare_key")
+      .map(kf => Message(kf.service, kf))
+      .via(GraphDSL.create() { implicit graphBuilder =>
+        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
+        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
 
-  //Source.single(KeyFinding("Facebook", "scala", "https://github.com/koliambus/keys-collector", "https://github.com/koliambus/keys-collector/blob/43529519c6a6eed8f4e73bfaf975607da46045d6/src/main/scala/ua/ucu/fp/keyscollector/Application.scala#L11"))
+        IN ~> OUT
+        IN ~> NewProjectFlow() ~> OUT
+
+        FlowShape(IN.in, OUT.out)
+      })
+      .toMat(BroadcastHub.sink)(Keep.right)
+      .run
 
   val bindingFuture =
     serverSource.runForeach { connection => // foreach materializes the source
