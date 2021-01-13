@@ -38,8 +38,6 @@ object Application extends App {
 
         FlowShape(IN.in, OUT.out)
       })
-      .toMat(BroadcastHub.sink)(Keep.right)
-      .run
 
   val bindingFuture =
     serverSource.runForeach { connection => // foreach materializes the source
