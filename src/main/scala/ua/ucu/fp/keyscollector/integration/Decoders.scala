@@ -15,9 +15,14 @@ case object RepositoryDecoder {
 
     val language = fileURL match {
       case file if file.endsWith(".rb") => "ruby"
+      case file if file.endsWith(".php") => "php"
+      case file if file.endsWith(".py") => "python"
+      case file if file.endsWith(".java") => "java"
+      case file if file.endsWith(".scala") => "scala"
       case _ => "unknown"
     }
-
-    KeyFinding("Foursquare", language, repository("html_url").toString, fileURL, textMatches(0)("fragment").toString)
+    val keyFinding = KeyFinding("Foursquare", language, repository("html_url").toString, fileURL, textMatches(0)("fragment").toString)
+    //println(keyFinding)
+    keyFinding
   }
 }

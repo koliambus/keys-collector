@@ -1,7 +1,7 @@
 package ua.ucu.fp.keyscollector
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
@@ -26,7 +26,7 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-  val findingSource: Source[Message[MessagePayload], NotUsed] =
+  val findingSource: Source[Message[MessagePayload], Cancellable] =
     GitHubSource("foursquare_key")
       .map(kf => Message(kf.service, kf))
       .via(GraphDSL.create() { implicit graphBuilder =>
