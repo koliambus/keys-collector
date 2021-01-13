@@ -22,7 +22,7 @@ case object RepositoryDecoder {
       case _ => "unknown"
     }
     val keyFinding = KeyFinding("Foursquare", language, repository("html_url").toString, fileURL, textMatches(0)("fragment").toString)
-    println(keyFinding)
+    //println(keyFinding)
     keyFinding
   }
 }
