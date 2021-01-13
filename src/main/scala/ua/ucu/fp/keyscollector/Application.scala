@@ -1,7 +1,7 @@
 package ua.ucu.fp.keyscollector
 
 import akka.NotUsed
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
@@ -26,22 +26,18 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-//  val findingSource: Source[Message[MessagePayload], NotUsed] =
-//    GitHubSource("foursquare_key")
-//      .map(kf => Message(kf.service, kf))
-//      .via(GraphDSL.create() { implicit graphBuilder =>
-//        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
-//        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
-//
-//        IN ~> OUT
-//        IN ~> NewProjectFlow() ~> OUT
-//
-//        FlowShape(IN.in, OUT.out)
-//      })
-//      .toMat(BroadcastHub.sink)(Keep.right)
-//      .run
+  val findingSource: Source[Message[MessagePayload], NotUsed] =
+    GitHubSource("foursquare_key")
+      .map(kf => Message(kf.service, kf))
+      .via(GraphDSL.create() { implicit graphBuilder =>
+        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](2))
+        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
 
-  val findingSource: Source[KeyFinding, Cancellable] = GitHubSource("foursquare_key")
+        IN ~> OUT
+        IN ~> NewProjectFlow() ~> OUT
+
+        FlowShape(IN.in, OUT.out)
+      })
 
   val bindingFuture =
     serverSource.runForeach { connection => // foreach materializes the source
