@@ -23,13 +23,18 @@ object Application extends App {
   implicit val system: ActorSystem = ActorSystem()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+  val sources: List[Map[String, String]] = List(
+    Map("service" -> "Foursquare", "q" -> "foursquare_key"),
+    Map("service" -> "Facebook", "q" -> "facebook_key")
+  )
+
   val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
 
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
   val findingSource: Source[Message[MessagePayload], Cancellable] =
-    GitHubSource("foursquare_key")
+    GitHubSource(sources)
       .map(kf => Message(kf.service, kf))
       .via(GraphDSL.create() { implicit graphBuilder =>
         val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](3))
