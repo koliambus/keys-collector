@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Flow, Sink}
 import com.mongodb.client.model.UpdateOptions
 import com.mongodb.reactivestreams.client.{MongoClients, MongoCollection}
 import org.bson.{BsonDocument, Document}
-import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message}
+import ua.ucu.fp.keyscollector.dto.KeyFinding
 
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 
@@ -19,9 +19,9 @@ object StatisticsSink {
 
   val duration: FiniteDuration = new FiniteDuration(10, SECONDS)
 
-  def apply(): Sink[Message[KeyFinding], Any] = {
-    Flow[Message[KeyFinding]]
-      .map(m => m.payload.language)
+  def apply(): Sink[KeyFinding, Any] = {
+    Flow[KeyFinding]
+      .map(m => m.language)
       .map(l => DocumentUpdate(
         BsonDocument.parse("{_id: \"" + l + "\"}"),
         BsonDocument.parse("{ $inc: { count: 1 }}")

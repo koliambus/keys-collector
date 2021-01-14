@@ -11,9 +11,9 @@ import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, BroadcastHub, Flow, GraphDSL, Keep, Merge, Sink, Source}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload}
+import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload, NewProjectLeaked}
 import ua.ucu.fp.keyscollector.integration.GitHubSource
-import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink, StatisticsFlow}
+import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsFlow, StatisticsSink}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -33,12 +33,11 @@ object Application extends App {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
-  val findingSource: Source[Message[MessagePayload], Cancellable] =
+  val findingSource: Source[MessagePayload, Cancellable] =
     GitHubSource(sources)
-      .map(kf => Message(kf.service, kf))
       .via(GraphDSL.create() { implicit graphBuilder =>
-        val IN = graphBuilder.add(Broadcast[Message[KeyFinding]](3))
-        val OUT = graphBuilder.add(Merge[Message[MessagePayload]](2))
+        val IN = graphBuilder.add(Broadcast[KeyFinding](3))
+        val OUT = graphBuilder.add(Merge[MessagePayload](2))
 
         IN ~> OUT
         IN ~> NewProjectFlow() ~> OUT
@@ -76,6 +75,7 @@ object Application extends App {
                   findingSource
                     .filter(model => services.exists(_.equalsIgnoreCase(model.service)))
                 })
+                  .map(key => Message.create(key))
                   .map(mapper.writeValueAsString(_))
                   .map(TextMessage(_))
 
