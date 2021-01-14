@@ -42,13 +42,4 @@ object GitHubSource {
     .mapConcat(x => x)
     .mapConcat(x => x)
     .via(Deduplicate())
-
-  def main(args: Array[String]): Unit = {
-    //    Source.tick(1.second, 1.second, "tick")
-    //      .mapAsync(1) {_ => Future(List(1, 2, 3))}
-    //      .mapConcat(x => x)
-    //      .via(Deduplicate())
-    //      .runForeach(println)
-    //apply("foursquare_key")
-  }
 }

@@ -8,10 +8,6 @@ libraryDependencies += "org.squbs" %% "squbs-ext" % "0.13.0"
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 
-//libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0"
-
-
-
 libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.10"
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.2.1"
 libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.6.10"
