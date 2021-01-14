@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, Message, MessagePayload}
 import ua.ucu.fp.keyscollector.integration.GitHubSource
-import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink, StatisticsSource}
+import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink, StatisticsFlow}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -56,8 +56,7 @@ object Application extends App {
                     Sink.ignore,
                     Source
                       .tick(1.second, FiniteDuration(tick.toInt, unit), "tick")
-                      .zip(StatisticsSource())
-                      .map(m => m._2)
+                      .via(StatisticsFlow())
                       .map(mapper.writeValueAsString(_))
                       .map(TextMessage(_))
                   ))
