@@ -1,18 +1,20 @@
 package ua.ucu.fp.keyscollector.ws
 
-import akka.{Done, NotUsed}
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.TextMessage
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.http.scaladsl.server.Directives._
+import akka.stream.FlowShape
+import akka.stream.scaladsl.GraphDSL.Implicits._
+import akka.stream.scaladsl.{Flow, GraphDSL, Sink, Source}
+import akka.{Done, NotUsed}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import ua.ucu.fp.keyscollector.dto.{Message, MessagePayload}
-import ua.ucu.fp.keyscollector.stage.StatisticsFlow
-import akka.http.scaladsl.server.Directives._
+import ua.ucu.fp.keyscollector.dto.{Message, MessagePayload, Statistics}
+import ua.ucu.fp.keyscollector.zip.ZipMainLatest
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object WsController {
 
@@ -24,8 +26,11 @@ object WsController {
   val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
     Http().newServerAt("localhost", 8080).connectionSource()
 
+  def statisticsFilter(findingSource: Source[MessagePayload, Any]): Source[Statistics, Any] =
+    findingSource.filter(p => p.isInstanceOf[Statistics]).map(_.asInstanceOf[Statistics])
 
-  def apply(findingSource: Source[MessagePayload, Cancellable]): Future[Done] = {
+
+  def apply(findingSource: Source[MessagePayload, Any]): Future[Done] = {
     serverSource.runForeach { connection => // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
       // ... and then actually handle the connection
@@ -39,7 +44,13 @@ object WsController {
                     Sink.ignore,
                     Source
                       .tick(0.second, FiniteDuration(tick.toInt, unit), "tick")
-                      .via(StatisticsFlow())
+                      .via(GraphDSL.create() {
+                        implicit graphBuilder =>
+                          val zip = graphBuilder.add(ZipMainLatest[Any, Statistics]())
+                          statisticsFilter(findingSource) ~> zip.in1
+                          FlowShape(zip.in0, zip.out)
+                      })
+                      .map(s => s._2)
                       .map(mapper.writeValueAsString(_))
                       .map(TextMessage(_))
                   ))

@@ -1,12 +1,11 @@
 package ua.ucu.fp.keyscollector
 
-import akka.actor.Cancellable
 import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Broadcast, GraphDSL, Merge, Source}
+import akka.stream.scaladsl.{Broadcast, GraphDSL, Merge}
 import ua.ucu.fp.keyscollector.dto.{KeyFinding, MessagePayload}
 import ua.ucu.fp.keyscollector.integration.GitHubSource
-import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSink}
+import ua.ucu.fp.keyscollector.stage.{NewProjectFlow, StatisticsSource, StatisticsUpdate}
 import ua.ucu.fp.keyscollector.ws.WsController
 
 
@@ -16,18 +15,19 @@ object Application extends App {
     Map("service" -> "Facebook", "q" -> "facebook_key")
   )
 
-  val findingSource: Source[MessagePayload, Cancellable] =
-    GitHubSource(sources)
-      .via(GraphDSL.create() { implicit graphBuilder =>
+  val graphSource =
+    GitHubSource(sources).via(
+      GraphDSL.create() { implicit graphBuilder =>
         val IN = graphBuilder.add(Broadcast[KeyFinding](3))
-        val OUT = graphBuilder.add(Merge[MessagePayload](2))
+        val OUT = graphBuilder.add(Merge[MessagePayload](3))
 
         IN ~> OUT
         IN ~> NewProjectFlow() ~> OUT
-        IN ~> StatisticsSink()
+        IN ~> StatisticsUpdate() ~> StatisticsSource() ~> OUT
 
         FlowShape(IN.in, OUT.out)
-      })
+      }
+    )
 
-  val bindingFuture = WsController(findingSource)
+  val bindingFuture = WsController(graphSource)
 }

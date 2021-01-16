@@ -9,7 +9,7 @@ import ua.ucu.fp.keyscollector.dto.{Statistics, StatisticsItem}
 
 import scala.concurrent.duration.{FiniteDuration, SECONDS}
 
-object StatisticsFlow {
+object StatisticsSource {
 
   val dbName = "keys_collector"
   val collectionName = "statistics"
@@ -26,16 +26,5 @@ object StatisticsFlow {
           .fold(List[StatisticsItem]())((l, d) => d :: l)
           .map(m => Statistics(m))
       )
-  }
-
-
-  def main(args: Array[String]): Unit = {
-    implicit val system: ActorSystem = ActorSystem()
-    Source.unfold(0 -> 1) {
-      case (a, _) if a > 10000000 => None
-      case (a, b) => Some((b -> (a + b)) -> a)
-    }
-      .map(println(_))
-      .run()
   }
 }
