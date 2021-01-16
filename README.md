@@ -1,4 +1,4 @@
-# GitHub password searcher
+# Keys collector
 Team: Mykola Melnychuk, Oles Dobosevych
 Search for tokens and secret via GitHub API.
 ## Setup
