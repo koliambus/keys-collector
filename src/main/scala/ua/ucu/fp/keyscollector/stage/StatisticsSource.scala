@@ -1,8 +1,7 @@
 package ua.ucu.fp.keyscollector.stage
 
-import akka.actor.ActorSystem
 import akka.stream.alpakka.mongodb.scaladsl.MongoSource
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.Flow
 import com.mongodb.reactivestreams.client.{MongoClients, MongoCollection}
 import org.bson.Document
 import ua.ucu.fp.keyscollector.dto.{Statistics, StatisticsItem}

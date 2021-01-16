@@ -1,15 +1,13 @@
 package ua.ucu.fp.keyscollector.zip
 
-import akka.stream.{Attributes, FanInShape2, Inlet}
-import akka.stream._
-import akka.stream.scaladsl.ZipLatest
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
+import akka.stream.{Attributes, FanInShape2, Inlet, _}
 
 
 object ZipMainLatest {
 
   /**
-   * Create a new `ZipLatest`.
+   * Create a new `ZipMainLatest`.
    */
   def apply[A, B](): ZipMainLatest[A, B] = new ZipMainLatest()
 }
